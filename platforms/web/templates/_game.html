@@ -1,0 +1,32 @@
+<div class="container">
+  <h1>NUMBER GUESSING GAME</h1>
+
+  <div class="controls">
+    <select name="level" hx-post="/new" hx-include="[name='level']" hx-target="#game" hx-swap="innerHTML">
+      <option value="easy" {% if level == 'easy' %}selected{% endif %}>Easy (1-50)</option>
+      <option value="medium" {% if level == 'medium' %}selected{% endif %}>Medium (1-100)</option>
+      <option value="hard" {% if level == 'hard' %}selected{% endif %}>Hard (1-500)</option>
+    </select>
+    <button hx-post="/new" hx-include="[name='level']" hx-target="#game" hx-swap="innerHTML">New Game</button>
+  </div>
+
+  <p class="range">Range: {{ min_num }} – {{ max_num }}</p>
+
+  <form hx-post="/guess" hx-target="#game" hx-swap="innerHTML">
+    <input type="number" name="guess" placeholder="Your guess" required min="{{ min_num }}" max="{{ max_num }}" />
+    <button type="submit">GUESS</button>
+  </form>
+
+  <div class="feedback {% if won %}win{% else %}hint{% endif %}">
+    {{ feedback }}
+  </div>
+
+  <div class="stats">
+    <span>Attempts: {{ attempts }}</span>
+    <span>Score: {{ score if won else '-' }}/1000</span>
+  </div>
+
+  <div class="thermometer">
+    <div class="fill" style="height: {{ thermo }}%; background-color: {{ thermo_color }};"></div>
+  </div>
+</div>

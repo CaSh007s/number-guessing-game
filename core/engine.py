@@ -1,30 +1,40 @@
 import random
-from .state import GameState
-from .scorer import calculate_score
-from .difficulty import get_range
 
-def start_game(level: str = "medium") -> GameState:
-    min_num, max_num = get_range(level)
-    secret = random.randint(min_num, max_num)
-    return GameState(secret=secret, min_num=min_num, max_num=max_num)
+class GameState:
+    def __init__(self, level):
+        self.level = level
+        self.min_num, self.max_num = {
+            "easy": (1, 50),
+            "medium": (1, 100),
+            "hard": (1, 500)
+        }[level]
+        self.secret = random.randint(self.min_num, self.max_num)
+        self.attempts = 0
 
-def make_guess(state: GameState, guess: int) -> dict:
+def start_game(level="medium"):
+    return GameState(level)
+
+def get_hint(diff):
+    if diff == 0:
+        return "CORRECT!"
+    elif diff <= 5:
+        return "Very hot!"
+    elif diff <= 10:
+        return "Hot"
+    elif diff <= 20:
+        return "Warm"
+    elif diff <= 50:
+        return "Cold"
+    else:
+        return "Very cold"
+
+def make_guess(state, guess):
     state.attempts += 1
     diff = abs(guess - state.secret)
-    
+
     if guess == state.secret:
-        state.score = calculate_score(state.attempts, state.max_num)
-        return {"correct": True, "score": state.score, "attempts": state.attempts}
-    
-    hint = "Too high!" if guess > state.secret else "Too low!"
-    warmth = (
-        "SCORCHING!" if diff <= 5 else
-        "Warm!" if diff <= 10 else
-        "Getting closer..." if diff <= 20 else
-        "Cold!"
-    )
-    if state.prev_diff is not None:
-        warmth += " (Warmer!)" if diff < state.prev_diff else " (Colder)"
-    
-    state.prev_diff = diff
-    return {"correct": False, "hint": f"{hint} {warmth}"}
+        score = max(100, 1000 - (state.attempts - 1) * 100)
+        return {"correct": True, "score": score, "state": state}
+    else:
+        hint = get_hint(diff)
+        return {"correct": False, "hint": hint, "state": state}
