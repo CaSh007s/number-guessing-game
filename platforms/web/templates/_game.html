@@ -1,32 +1,173 @@
-<div class="container">
-  <h1>NUMBER GUESSING GAME</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Number Guessing Game</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    /* Rules Panel Overlay */
+    #rules-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    #rules-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .rules-panel {
+      background: #1a1a1a;
+      border: 2px solid #00ff88;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 420px;
+      width: 90%;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+    .rules-panel h2 {
+      margin: 0 0 16px;
+      color: #00ff88;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .rules-panel ol {
+      margin: 16px 0;
+      padding-left: 20px;
+      line-height: 1.8;
+    }
+    .rules-panel li {
+      margin: 8px 0;
+    }
+    .rules-btn {
+      background: #00bfff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 16px;
+      width: 100%;
+    }
+    .rules-btn:hover { background: #009fd9; }
 
-  <div class="controls">
-    <select name="level" hx-post="/new" hx-include="[name='level']" hx-target="#game" hx-swap="innerHTML">
-      <option value="easy" {% if level == 'easy' %}selected{% endif %}>Easy (1-50)</option>
-      <option value="medium" {% if level == 'medium' %}selected{% endif %}>Medium (1-100)</option>
-      <option value="hard" {% if level == 'hard' %}selected{% endif %}>Hard (1-500)</option>
-    </select>
-    <button hx-post="/new" hx-include="[name='level']" hx-target="#game" hx-swap="innerHTML">New Game</button>
+    /* Floating ? Button */
+    #help-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #help-btn:hover { transform: scale(1.1); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Help Button -->
+  <button id="help-btn" hx-get="/rules" hx-target="#rules-overlay" hx-swap="innerHTML" hx-trigger="click">?</button>
+
+  <!-- Rules Overlay (Hidden by default) -->
+  <div id="rules-overlay">
+    <div class="rules-panel">
+      <h2>HOW TO PLAY (Super Easy!)</h2>
+      <ol>
+        <li>The computer thought of a <strong>SECRET NUMBER</strong> between {{ min_num }}–{{ max_num }}</li>
+        <li>Type your guess and click <strong>GUESS</strong></li>
+        <li>Get hints:
+          <br>❄️ <strong>VERY COLD</strong> = Way off!
+          <br>🥶 <strong>COLD</strong> = Still far
+          <br>😊 <strong>WARM</strong> = Getting closer!
+          <br>🔥 <strong>HOT</strong> = Almost there!
+          <br>🔥🔥 <strong>VERY HOT</strong> = One digit off — SO close!
+        </li>
+        <li>Thermometer turns:
+          <br>🔵 Blue = Cold | 🟡 Yellow = Warm | 🟠 Orange = Hot | 🔴 Red = Very Hot!
+        </li>
+        <li>Guess right → <strong>WIN!</strong> 🎉<br>
+            Score = 1000 − (guesses × 100)
+        </li>
+      </ol>
+      <button class="rules-btn" onclick="closeRules()">Got it!</button>
+    </div>
   </div>
 
-  <p class="range">Range: {{ min_num }} – {{ max_num }}</p>
+  <!-- Main Game UI -->
+  <div class="container">
+    <h1>NUMBER GUESSING GAME</h1>
 
-  <form hx-post="/guess" hx-target="#game" hx-swap="innerHTML">
-    <input type="number" name="guess" placeholder="Your guess" required min="{{ min_num }}" max="{{ max_num }}" />
-    <button type="submit">GUESS</button>
-  </form>
+    <div class="controls">
+      <select name="level" hx-post="/new" hx-include="[name='level']" hx-target="#game" hx-swap="innerHTML">
+        <option value="easy" {% if level == 'easy' %}selected{% endif %}>Easy (1-50)</option>
+        <option value="medium" {% if level == 'medium' %}selected{% endif %}>Medium (1-100)</option>
+        <option value="hard" {% if level == 'hard' %}selected{% endif %}>Hard (1-200)</option>
+      </select>
+      <button hx-post="/new" hx-include="[name='level']">New Game</button>
+    </div>
 
-  <div class="feedback {% if won %}win{% else %}hint{% endif %}">
-    {{ feedback }}
+    <p class="range">Range: {{ min_num }} – {{ max_num }}</p>
+
+    <form hx-post="/guess" hx-target="#game" hx-swap="innerHTML">
+      <input type="number" name="guess" placeholder="Your guess" required min="{{ min_num }}" max="{{ max_num }}">
+      <button type="submit">GUESS</button>
+    </form>
+
+    <div class="feedback {% if won %}win{% else %}hint{% endif %}">
+      {{ feedback }}
+    </div>
+
+    <div class="stats">
+      <span>Attempts: {{ attempts }}</span>
+      <span>Score: {{ score if won else '-' }}/1000</span>
+    </div>
+
+    <div class="thermometer">
+      <div class="fill" style="height: {{ thermo }}%; background-color: {{ thermo_color }};"></div>
+    </div>
   </div>
 
-  <div class="stats">
-    <span>Attempts: {{ attempts }}</span>
-    <span>Score: {{ score if won else '-' }}/1000</span>
-  </div>
+  <script>
+    // Show rules on first visit
+    window.onload = function() {
+      if (!localStorage.getItem('rulesSeen')) {
+        document.getElementById('rules-overlay').classList.add('visible');
+      }
+    };
 
-  <div class="thermometer">
-    <div class="fill" style="height: {{ thermo }}%; background-color: {{ thermo_color }};"></div>
-  </div>
-</div>
+    // Close rules + remember
+    function closeRules() {
+      document.getElementById('rules-overlay').classList.remove('visible');
+      localStorage.setItem('rulesSeen', 'true');
+    }
+
+    // Optional: Allow ESC to close
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeRules();
+    });
+  </script>
+
+</body>
+</html>
