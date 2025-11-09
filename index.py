@@ -3,8 +3,9 @@ import os
 import random
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "supersecret123")  # Fallback
+app.secret_key = os.getenv("SECRET_KEY", "fallback-secret-123")
 
+# === GAME LOGIC ===
 class GameState:
     def __init__(self, level):
         self.level = level
@@ -36,7 +37,6 @@ def get_hint(diff):
 def make_guess(state, guess):
     state.attempts += 1
     diff = abs(guess - state.secret)
-
     if guess == state.secret:
         score = max(100, 1000 - (state.attempts - 1) * 100)
         return {"correct": True, "score": score, "state": state}
@@ -49,6 +49,7 @@ def get_state():
         session['state'] = vars(start_game('medium'))
     return session['state']
 
+# === ROUTES ===
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -85,7 +86,6 @@ def guess():
     except:
         return render_template("_game.html", **state, feedback="Invalid number!", won=False, thermo=10, thermo_color="#ff0000")
 
-    # Rebuild object from dict
     game_obj = type('obj', (), {})()
     for k, v in state.items():
         setattr(game_obj, k, v)
