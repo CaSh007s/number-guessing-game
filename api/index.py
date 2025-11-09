@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 import os
 import random
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.secret_key = "supersecret123"  # No env for simplicity
+app.secret_key = os.getenv("SECRET_KEY", "fallback-secret-123")
 
-# Game Logic (Self-Contained)
+# Game Logic (All Here — No External Imports)
 class GameState:
     def __init__(self, level):
         self.level = level
@@ -38,12 +38,12 @@ def make_guess(state, guess):
         hint = get_hint(diff)
         return {"correct": False, "hint": hint, "state": state}
 
-# Session State (Simple dict)
 def get_state():
-    if 'state' not in request.session:
-        request.session['state'] = vars(start_game('medium'))
-    return request.session['state']
+    if 'state' not in session:
+        session['state'] = vars(start_game('medium'))
+    return session['state']
 
+# Routes
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -65,7 +65,7 @@ def game():
 def new_game():
     level = request.form.get("level", "medium")
     new_state = start_game(level)
-    request.session['state'] = vars(new_state)
+    session['state'] = vars(new_state)
     return render_template("_game.html",
         level=level, min_num=new_state.min_num, max_num=new_state.max_num,
         feedback="Guess a number!", attempts=0, score=0, won=False,
@@ -85,7 +85,7 @@ def guess():
         setattr(game_obj, k, v)
 
     result = make_guess(game_obj, guess)
-    request.session['state'] = vars(result['state'])
+    session['state'] = vars(result['state'])
 
     diff = abs(guess - result['state'].secret)
     thermo = 100 if result['correct'] else max(0, 100 - diff * 2)
