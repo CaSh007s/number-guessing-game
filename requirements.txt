@@ -1,1 +1,4 @@
 Flask==2.3.3
+colorama==0.4.6
+customtkinter==5.2.2
+simpleaudio==1.0.5
